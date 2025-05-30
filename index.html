@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royce Collection</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="content/styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <div class="nav__logo">
+                    <span class="logo-text">ROYCE</span>
+                </div>
+                <ul class="nav__menu">
+                    <li><a href="#" class="nav__link">Каталог</a></li>
+                    <li><a href="#" class="nav__link">О компании</a></li>
+                    <li><a href="#" class="nav__link">Контакты</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="collection">
+            <div class="container">
+                <h1 class="main-title">КОЛЛЕКЦИИ</h1>
+                <div id="collections-container">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <template id="collection-template">
+        <div class="collection__header">
+            <div class="collection__intro">
+                <div class="collection__image">
+                    <img src="" alt="" class="collection-main-image">
+                    <div class="collection__overlay">
+                        <h2 class="collection-title"></h2>
+                        <img src="content/vector.jpg" alt="" class="collection__vector">
+                        <div class="specs-list">
+                        </div>
+                    </div>
+                </div>
+                <div class="collection__description">
+                    <h2 class="collection-title"></h2>
+                    <p class="collection-description"></p>
+                    <a href="#" class="catalog-btn">Перейти в каталог</a>
+                </div>
+            </div>
+        </div>
+        <div class="collection__grid">
+        </div>
+        <div style="height: 40px;"></div>
+    </template>
+
+    <template id="product-card-template">
+        <div class="product-card">
+            <div class="product-card__image">
+                <div class="product-card__stickers">
+                </div>
+                <div class="product-card__slider">
+                    <div class="product-card__dots">
+                    </div>
+                </div>
+            </div>
+            <div class="product-card__info">
+                <h3 class="product-card__title"></h3>
+                <div class="product-card__specs"></div>
+                <div class="product-card__price">
+                </div>
+                <button class="product-card__buy">Купить</button>
+            </div>
+        </div>
+    </template>
+
+    <script src="content/products.js"></script>
+    <script src="content/script.js"></script>
+</body>
+</html>
