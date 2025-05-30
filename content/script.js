@@ -18,6 +18,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     initializeCollectionSliders();
+
+    // Инициализация мобильного меню
+    const burger = document.querySelector('.nav__burger');
+    const menu = document.querySelector('.nav__menu');
+    
+    if (burger && menu) {
+        burger.addEventListener('click', function() {
+            menu.classList.toggle('active');
+            document.body.classList.toggle('menu-open');
+        });
+
+        // Закрытие меню при клике на пункт меню
+        menu.querySelectorAll('.nav__link').forEach(link => {
+            link.addEventListener('click', () => {
+                menu.classList.remove('active');
+                document.body.classList.remove('menu-open');
+            });
+        });
+
+        // Закрытие меню при клике вне его
+        document.addEventListener('click', function(event) {
+            if (!menu.contains(event.target) && !burger.contains(event.target)) {
+                menu.classList.remove('active');
+                document.body.classList.remove('menu-open');
+            }
+        });
+    }
 });
 
 function initializeCollectionSliders() {
@@ -452,4 +479,66 @@ function addToCart(productId) {
 // Обновление отображения количества товаров в корзине
 function updateCartButton() {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
+}
+
+// Оптимизация слайдера для мобильных устройств
+function initializeSlider(container) {
+    let isScrolling = false;
+    let startX;
+    let scrollLeft;
+    let timeoutId;
+
+    container.addEventListener('touchstart', (e) => {
+        isScrolling = true;
+        startX = e.touches[0].pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+        cancelAnimationFrame(timeoutId);
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+        if (!isScrolling) return;
+        e.preventDefault();
+        const x = e.touches[0].pageX - container.offsetLeft;
+        const walk = (x - startX) * 2;
+        container.scrollLeft = scrollLeft - walk;
+    }, { passive: false });
+
+    container.addEventListener('touchend', () => {
+        isScrolling = false;
+        const cards = container.querySelectorAll('.product-card');
+        if (!cards.length) return;
+
+        const cardWidth = cards[0].offsetWidth;
+        const scrollPosition = container.scrollLeft;
+        const targetIndex = Math.round(scrollPosition / cardWidth);
+        
+        timeoutId = requestAnimationFrame(() => {
+            container.scrollTo({
+                left: targetIndex * cardWidth,
+                behavior: 'smooth'
+            });
+        });
+    });
+}
+
+// Применяем оптимизацию к существующему коду
+const collectionsContainer = document.getElementById('collections-container');
+if (collectionsContainer) {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const slider = entry.target.querySelector('.collection__grid');
+                if (slider) {
+                    initializeSlider(slider);
+                }
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+
+    // Наблюдаем за коллекциями
+    collectionsContainer.querySelectorAll('.collection').forEach(collection => {
+        observer.observe(collection);
+    });
 } 
