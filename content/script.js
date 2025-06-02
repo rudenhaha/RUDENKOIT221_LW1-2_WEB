@@ -1,4 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Фикс для iOS Safari для корректной работы 100vh
+    function fixIOSViewport() {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    
+    window.addEventListener('resize', fixIOSViewport);
+    fixIOSViewport();
+
+    // Отключаем zoom на iOS
+    document.addEventListener('gesturestart', function(e) {
+        e.preventDefault();
+    });
+
     initializeLocalStorage();
     const products = getProductsFromStorage();
     
@@ -40,6 +54,15 @@ function initializeMobileMenu() {
                 document.body.classList.remove('menu-open');
             }
         });
+
+        // Закрываем меню при скролле
+        document.addEventListener('scroll', () => {
+            if (menu.classList.contains('active')) {
+                menu.classList.remove('active');
+                menuBtn.classList.remove('active');
+                document.body.classList.remove('menu-open');
+            }
+        }, { passive: true });
     }
 }
 
@@ -58,6 +81,8 @@ function initializeCollectionSliders() {
         let isScrollingHorizontally = false;
         
         function handleDragStart(e) {
+            if (e.type === 'touchstart' && e.touches.length > 1) return;
+            
             isDown = true;
             slider.classList.add('dragging');
             startX = e.type === 'mousedown' ? e.pageX : e.touches[0].pageX;
@@ -69,6 +94,7 @@ function initializeCollectionSliders() {
         
         function handleDragMove(e) {
             if (!isDown) return;
+            if (e.type === 'touchmove' && e.touches.length > 1) return;
             
             const x = e.type === 'mousemove' ? e.pageX : e.touches[0].pageX;
             const y = e.type === 'mousemove' ? e.pageY : e.touches[0].pageY;
@@ -76,15 +102,20 @@ function initializeCollectionSliders() {
             const deltaX = Math.abs(x - startX);
             const deltaY = Math.abs(y - startY);
             
-            // Определяем направление прокрутки
-            if (!isScrollingHorizontally && (deltaX > deltaY)) {
-                isScrollingHorizontally = true;
+            // Определяем направление прокрутки только при значительном движении
+            if (!isScrollingHorizontally && (deltaX > 5 || deltaY > 5)) {
+                isScrollingHorizontally = deltaX > deltaY;
+                if (!isScrollingHorizontally) {
+                    isDown = false;
+                    slider.classList.remove('dragging');
+                    return;
+                }
             }
             
             // Если движение горизонтальное, предотвращаем вертикальную прокрутку
             if (isScrollingHorizontally) {
                 e.preventDefault();
-                const walk = (startX - x) * 2;
+                const walk = (startX - x) * 1.5;
                 const newScrollLeft = scrollLeft + walk;
                 
                 const now = Date.now();
@@ -100,7 +131,8 @@ function initializeCollectionSliders() {
             }
         }
         
-        function handleDragEnd() {
+        function handleDragEnd(e) {
+            if (!isDown) return;
             isDown = false;
             slider.classList.remove('dragging');
             
@@ -133,7 +165,7 @@ function initializeCollectionSliders() {
         
         // Мобильные события
         slider.addEventListener('touchstart', handleDragStart, { passive: true });
-        slider.addEventListener('touchend', handleDragEnd);
+        slider.addEventListener('touchend', handleDragEnd, { passive: true });
         slider.addEventListener('touchmove', handleDragMove, { passive: false });
         
         // Десктопные события
