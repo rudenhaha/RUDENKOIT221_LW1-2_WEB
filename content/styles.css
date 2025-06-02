@@ -2,18 +2,24 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html {
+    height: 100%;
     width: 100%;
-    height: auto;
-    min-height: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
     font-family: 'Manrope', sans-serif;
     color: #333;
     background: #fff;
+    min-height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 .container {
@@ -181,11 +187,24 @@ body {
 .collection__grid {
     display: flex;
     gap: 20px;
-    padding: 20px;
-    margin: 0 -20px;
+    margin: 0 -10px;
     overflow-x: auto;
-    scroll-snap-type: x mandatory;
+    cursor: grab;
+    position: relative;
+    -webkit-user-select: none;
+    user-select: none;
+    will-change: transform;
+    transform: translateZ(0);
+    transition: none;
+    touch-action: pan-x;
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.collection__grid::-webkit-scrollbar {
+    display: none;
 }
 
 .product-card {
@@ -622,13 +641,13 @@ body {
 @media (hover: none) {
     .collection__grid {
         cursor: default;
-        touch-action: pan-x pinch-zoom;
+        touch-action: pan-x;
     }
-
+    
     .product-card {
         pointer-events: auto;
     }
-
+    
     .product-card__info {
         opacity: 1;
         transform: none;
@@ -765,5 +784,22 @@ body {
 
     .product-card__image {
         height: 300px;
+    }
+}
+
+/* Фиксы для iOS */
+@supports (-webkit-touch-callout: none) {
+    html, body {
+        height: 100%;
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .collection__grid {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    main {
+        -webkit-overflow-scrolling: touch;
     }
 } 

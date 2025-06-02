@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Предотвращаем нежелательные действия браузера по умолчанию
+    document.addEventListener('touchmove', function(e) {
+        if (e.target.closest('.collection__grid')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // Отключаем zoom на iOS
+    document.addEventListener('gesturestart', function(e) {
+        e.preventDefault();
+    });
+
     initializeLocalStorage();
     const products = getProductsFromStorage();
     
@@ -9,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initializeCardSliders();
     initializeMobileMenu();
+    initializeCollectionSliders();
     
     document.querySelectorAll('.product-card__buy').forEach(button => {
         button.addEventListener('click', function() {
@@ -158,4 +171,71 @@ function addToCart(productId) {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     cart.push(productId);
     localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+function initializeCollectionSliders() {
+    const sliders = document.querySelectorAll('.collection__grid');
+    
+    sliders.forEach(slider => {
+        let isDragging = false;
+        let startX = 0;
+        let scrollLeft = 0;
+        let lastX = 0;
+        let momentum = 0;
+        let animationId = null;
+        
+        function handleStart(e) {
+            isDragging = true;
+            startX = e.type === 'mousedown' ? e.pageX : e.touches[0].pageX;
+            scrollLeft = slider.scrollLeft;
+            lastX = startX;
+            
+            cancelAnimationFrame(animationId);
+            slider.style.scrollBehavior = 'auto';
+        }
+        
+        function handleMove(e) {
+            if (!isDragging) return;
+            
+            e.preventDefault();
+            const x = e.type === 'mousemove' ? e.pageX : e.touches[0].pageX;
+            const walk = x - startX;
+            
+            momentum = x - lastX;
+            lastX = x;
+            
+            slider.scrollLeft = scrollLeft - walk;
+        }
+        
+        function handleEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            const cardWidth = slider.children[0].offsetWidth;
+            const currentScroll = slider.scrollLeft;
+            const targetIndex = Math.round(currentScroll / cardWidth);
+            
+            slider.style.scrollBehavior = 'smooth';
+            slider.scrollLeft = targetIndex * cardWidth;
+        }
+        
+        // Touch events
+        slider.addEventListener('touchstart', handleStart, { passive: true });
+        slider.addEventListener('touchmove', handleMove, { passive: false });
+        slider.addEventListener('touchend', handleEnd);
+        
+        // Mouse events
+        slider.addEventListener('mousedown', handleStart);
+        slider.addEventListener('mousemove', handleMove);
+        slider.addEventListener('mouseup', handleEnd);
+        slider.addEventListener('mouseleave', handleEnd);
+        
+        // Prevent click during drag
+        slider.addEventListener('click', (e) => {
+            if (momentum !== 0) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+    });
 } 
