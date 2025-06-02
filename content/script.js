@@ -1,16 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    function fixIOSViewport() {
-        const vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty('--vh', `${vh}px`);
-    }
-    
-    window.addEventListener('resize', fixIOSViewport);
-    fixIOSViewport();
-
-    document.addEventListener('gesturestart', function(e) {
-        e.preventDefault();
-    });
-
     initializeLocalStorage();
     const products = getProductsFromStorage();
     
@@ -29,14 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
             addToCart(productId);
         });
     });
-
-    document.querySelectorAll('.collection__grid').forEach(slider => {
-        slider.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-    });
 });
 
 function initializeMobileMenu() {
@@ -49,7 +29,6 @@ function initializeMobileMenu() {
             menuBtn.classList.toggle('active');
         });
 
-        // Закрываем меню при клике вне его
         document.addEventListener('click', (e) => {
             if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
                 menu.classList.remove('active');
@@ -60,19 +39,13 @@ function initializeMobileMenu() {
 }
 
 function initializeCardSliders() {
-    const cards = document.querySelectorAll('.product-card');
-    
-    cards.forEach(card => {
+    document.querySelectorAll('.product-card').forEach(card => {
         const images = card.querySelectorAll('.product-card__img');
         const dots = card.querySelectorAll('.dot');
         let currentIndex = 0;
         
-        // Обработчики для точек
         dots.forEach((dot, index) => {
-            dot.addEventListener('click', (e) => {
-                e.preventDefault();
-                switchImage(index);
-            });
+            dot.addEventListener('click', () => switchImage(index));
         });
         
         function switchImage(newIndex) {
@@ -86,34 +59,7 @@ function initializeCardSliders() {
             currentIndex = newIndex;
         }
         
-        // Инициализация первого изображения
         switchImage(0);
-        
-        // Добавляем свайп для переключения изображений
-        let touchStartX = 0;
-        let touchEndX = 0;
-        
-        card.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-        }, { passive: true });
-        
-        card.addEventListener('touchend', (e) => {
-            touchEndX = e.changedTouches[0].clientX;
-            handleSwipe();
-        }, { passive: true });
-        
-        function handleSwipe() {
-            const swipeThreshold = 50;
-            const diff = touchEndX - touchStartX;
-            
-            if (Math.abs(diff) > swipeThreshold) {
-                if (diff > 0 && currentIndex > 0) {
-                    switchImage(currentIndex - 1);
-                } else if (diff < 0 && currentIndex < images.length - 1) {
-                    switchImage(currentIndex + 1);
-                }
-            }
-        }
     });
 }
 
@@ -127,22 +73,19 @@ function getProductsFromStorage() {
     return JSON.parse(localStorage.getItem('products'));
 }
 
-function updateProductsInStorage(products) {
-    localStorage.setItem('products', JSON.stringify(products));
-}
-
 function createCollection(collectionKey, collectionData) {
     const template = document.getElementById('collection-template');
     const clone = template.content.cloneNode(true);
+    
     const mainImage = clone.querySelector('.collection-main-image');
     mainImage.src = collectionData.image;
     mainImage.alt = collectionData.title + " Collection";
     
-    const titles = clone.querySelectorAll('.collection-title');
-    titles.forEach(title => title.textContent = collectionData.title);
+    clone.querySelectorAll('.collection-title')
+        .forEach(title => title.textContent = collectionData.title);
     
-    const description = clone.querySelector('.collection-description');
-    description.textContent = collectionData.description;
+    clone.querySelector('.collection-description')
+        .textContent = collectionData.description;
     
     const specsList = clone.querySelector('.specs-list');
     collectionData.specs.forEach(spec => {
@@ -152,7 +95,6 @@ function createCollection(collectionKey, collectionData) {
         specsList.appendChild(span);
     });
     
-    // Добавляем карточки товаров
     const grid = clone.querySelector('.collection__grid');
     collectionData.products.forEach(product => {
         grid.appendChild(createProductCard(product));
@@ -161,13 +103,13 @@ function createCollection(collectionKey, collectionData) {
     return clone;
 }
 
-// Функция для создания карточки товара
 function createProductCard(productData) {
     const template = document.getElementById('product-card-template');
     const clone = template.content.cloneNode(true);
     const card = clone.querySelector('.product-card');
+    
     card.dataset.productId = productData.id;
-
+    
     if (productData.isNew || productData.isSale) {
         const stickers = card.querySelector('.product-card__stickers');
         if (productData.isSale) {
@@ -184,7 +126,6 @@ function createProductCard(productData) {
         }
     }
     
-    // Добавляем изображения
     const slider = card.querySelector('.product-card__slider');
     const dots = card.querySelector('.product-card__dots');
     
@@ -203,7 +144,6 @@ function createProductCard(productData) {
     card.querySelector('.product-card__title').textContent = productData.title;
     card.querySelector('.product-card__specs').textContent = productData.specs;
     
-    // Формируем цену
     const priceBlock = card.querySelector('.product-card__price');
     if (productData.oldPrice) {
         priceBlock.innerHTML = `${productData.price} ₽<span class="product-card__price-old">${productData.oldPrice} ₽</span><span class="product-card__price-unit">/м²</span>`;
@@ -214,41 +154,8 @@ function createProductCard(productData) {
     return card;
 }
 
-// Функция для добавления товара в корзину
 function addToCart(productId) {
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     cart.push(productId);
     localStorage.setItem('cart', JSON.stringify(cart));
-    updateCartButton();
-}
-
-// Обновление отображения количества товаров в корзине
-function updateCartButton() {
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-}
-
-// Улучшение прокрутки на мобильных устройствах
-const collectionsContainer = document.getElementById('collections-container');
-if (collectionsContainer) {
-    let isScrolling = false;
-    let startX;
-    let scrollLeft;
-
-    collectionsContainer.addEventListener('touchstart', (e) => {
-        isScrolling = true;
-        startX = e.touches[0].pageX - collectionsContainer.offsetLeft;
-        scrollLeft = collectionsContainer.scrollLeft;
-    });
-
-    collectionsContainer.addEventListener('touchmove', (e) => {
-        if (!isScrolling) return;
-        e.preventDefault();
-        const x = e.touches[0].pageX - collectionsContainer.offsetLeft;
-        const walk = (x - startX) * 2;
-        collectionsContainer.scrollLeft = scrollLeft - walk;
-    });
-
-    collectionsContainer.addEventListener('touchend', () => {
-        isScrolling = false;
-    });
 } 
