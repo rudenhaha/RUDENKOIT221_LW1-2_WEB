@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     initializeCardSliders();
+    initializeMobileMenu();
     
     document.querySelectorAll('.product-card__buy').forEach(button => {
         button.addEventListener('click', function() {
@@ -18,268 +19,111 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     initializeCollectionSliders();
+});
 
-    // Инициализация мобильного меню
-    const burger = document.querySelector('.nav__burger');
+function initializeMobileMenu() {
+    const menuBtn = document.querySelector('.mobile-menu-btn');
     const menu = document.querySelector('.nav__menu');
     
-    if (burger && menu) {
-        burger.addEventListener('click', function() {
+    if (menuBtn && menu) {
+        menuBtn.addEventListener('click', () => {
             menu.classList.toggle('active');
-            document.body.classList.toggle('menu-open');
+            menuBtn.classList.toggle('active');
         });
 
-        // Закрытие меню при клике на пункт меню
-        menu.querySelectorAll('.nav__link').forEach(link => {
-            link.addEventListener('click', () => {
+        // Закрываем меню при клике вне его
+        document.addEventListener('click', (e) => {
+            if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
                 menu.classList.remove('active');
-                document.body.classList.remove('menu-open');
-            });
-        });
-
-        // Закрытие меню при клике вне его
-        document.addEventListener('click', function(event) {
-            if (!menu.contains(event.target) && !burger.contains(event.target)) {
-                menu.classList.remove('active');
-                document.body.classList.remove('menu-open');
+                menuBtn.classList.remove('active');
             }
         });
     }
-});
+}
 
 function initializeCollectionSliders() {
     const sliders = document.querySelectorAll('.collection__grid');
     
     sliders.forEach(slider => {
-        let isDragging = false;
-        let startPos = 0;
-        let currentTranslate = 0;
-        let prevTranslate = 0;
-        let animationID = null;
-        let lastDragPos = 0;
-        let lastDragTime = 0;
-        let momentum = 0;
-        let isAnimating = false;
-                // Добавляем стрелки для планшетов и мобильных
-        if (window.innerWidth <= 1024) {
-            const prevButton = document.createElement('button');
-            const nextButton = document.createElement('button');
-            prevButton.className = 'slider-arrow prev';
-            nextButton.className = 'slider-arrow next';
-            
-            slider.parentElement.appendChild(prevButton);
-            slider.parentElement.appendChild(nextButton);
-            
-            prevButton.addEventListener('click', () => moveSlider(445));
-            nextButton.addEventListener('click', () => moveSlider(-445));
+        let startX;
+        let scrollLeft;
+        let isDown = false;
+        let momentumID;
+        let velocity = 0;
+        let lastScrollLeft = 0;
+        let lastTime = 0;
+        
+        function handleDragStart(e) {
+            isDown = true;
+            slider.classList.add('dragging');
+            startX = e.type === 'mousedown' ? e.pageX : e.touches[0].pageX;
+            scrollLeft = slider.scrollLeft;
+            cancelMomentumTracking();
         }
         
-        function getVisibleCards() {
-            const containerWidth = slider.parentElement.offsetWidth;
-            return Math.floor(containerWidth / 445);
-        }
-        
-        function getMaxScroll() {
-            const cardWidth = 445;
-            const visibleCards = getVisibleCards();
-            const totalCards = slider.children.length;
-            return -Math.max(0, (totalCards - visibleCards) * cardWidth);
-        }
-        
-        function moveSlider(distance) {
-            const maxScroll = getMaxScroll();
-            let targetTranslate = currentTranslate + distance;
+        function handleDragMove(e) {
+            if (!isDown) return;
+            e.preventDefault();
             
-            if (targetTranslate > 0) targetTranslate = 0;
-            if (targetTranslate < maxScroll) targetTranslate = maxScroll;
+            const x = e.type === 'mousemove' ? e.pageX : e.touches[0].pageX;
+            const walk = (startX - x) * 2;
+            const newScrollLeft = scrollLeft + walk;
             
-            smoothScroll(targetTranslate);
-        }
-        
-        slider.addEventListener('touchstart', touchStart(e => e.touches[0].clientX));
-        slider.addEventListener('touchend', touchEnd);
-        slider.addEventListener('touchmove', touchMove(e => e.touches[0].clientX));
-        
-        slider.addEventListener('mousedown', touchStart(e => e.clientX));
-        slider.addEventListener('mouseup', touchEnd);
-        slider.addEventListener('mouseleave', touchEnd);
-        slider.addEventListener('mousemove', touchMove(e => e.clientX));
-        
-        function touchStart(getPositionX) {
-            return function(event) {
-                event.preventDefault();
-                
-                if (isAnimating) {
-                    cancelAnimationFrame(animationID);
-                    isAnimating = false;
-                }
-                
-                isDragging = true;
-                slider.classList.remove('smooth');
-                slider.classList.add('dragging');
-                startPos = getPositionX(event);
-                lastDragPos = startPos;
-                lastDragTime = Date.now();
-                momentum = 0;
-                
-                animationID = requestAnimationFrame(animation);
+            const now = Date.now();
+            const dt = now - lastTime;
+            if (dt > 0) {
+                velocity = (newScrollLeft - lastScrollLeft) / dt;
             }
+            
+            lastScrollLeft = newScrollLeft;
+            lastTime = now;
+            
+            slider.scrollLeft = newScrollLeft;
         }
         
-        function touchMove(getPositionX) {
-            return function(event) {
-                if (!isDragging) return;
-                
-                const currentPosition = getPositionX(event);
-                const currentTime = Date.now();
-                const timeElapsed = currentTime - lastDragTime;
-                
-                if (timeElapsed > 0) {
-                    momentum = (currentPosition - lastDragPos) / timeElapsed * 16;
-                }
-                
-                lastDragPos = currentPosition;
-                lastDragTime = currentTime;
-                
-                const currentX = currentPosition;
-                const walk = (currentX - startPos);
-                currentTranslate = prevTranslate + walk;
-                
-                setTranslate(currentTranslate);
-            }
-        }
-        
-        function touchEnd() {
-            isDragging = false;
+        function handleDragEnd() {
+            isDown = false;
             slider.classList.remove('dragging');
-            cancelAnimationFrame(animationID);
             
-            const maxScroll = getMaxScroll();
-            
-            if (currentTranslate > 0) {
-                smoothScroll(0);
-            } else if (currentTranslate < maxScroll) {
-                smoothScroll(maxScroll);
-            } else if (Math.abs(momentum) > 2) {
-                const direction = momentum < 0 ? -1 : 1;
-                const velocity = Math.min(Math.abs(momentum), 6);
-                inertialScroll(direction * velocity);
-            } else {
-                snapToGrid();
+            if (Math.abs(velocity) > 0.5) {
+                beginMomentumTracking();
             }
         }
         
-        function inertialScroll(velocity) {
-            const deceleration = 0.9;
-            let currentVelocity = velocity;
-            
-            function animate() {
-                if (Math.abs(currentVelocity) < 0.1) {
-                    snapToGrid();
+        function cancelMomentumTracking() {
+            cancelAnimationFrame(momentumID);
+        }
+        
+        function beginMomentumTracking() {
+            const amplitude = velocity * 800;
+            const step = () => {
+                velocity *= 0.95;
+                
+                if (Math.abs(velocity) < 0.05) {
+                    cancelMomentumTracking();
                     return;
                 }
                 
-                currentVelocity *= deceleration;
-                currentTranslate += currentVelocity;
-                
-                const maxScroll = getMaxScroll();
-                if (currentTranslate > 0) {
-                    smoothScroll(0);
-                    return;
-                }
-                if (currentTranslate < maxScroll) {
-                    smoothScroll(maxScroll);
-                    return;
-                }
-                
-                setTranslate(currentTranslate);
-                prevTranslate = currentTranslate;
-                
-                animationID = requestAnimationFrame(animate);
-            }
+                slider.scrollLeft += velocity * 16;
+                momentumID = requestAnimationFrame(step);
+            };
             
-            animate();
+            momentumID = requestAnimationFrame(step);
         }
         
-        function snapToGrid() {
-            const cardWidth = 445;
-            const maxScroll = getMaxScroll();
-            
-            if (currentTranslate > 0) {
-                smoothScroll(0);
-            } else if (currentTranslate < maxScroll) {
-                smoothScroll(maxScroll);
-            } else {
-                const targetIndex = Math.round(Math.abs(currentTranslate) / cardWidth);
-                const maxIndex = slider.children.length - getVisibleCards();
-                const boundedIndex = Math.max(0, Math.min(targetIndex, maxIndex));
-                smoothScroll(-boundedIndex * cardWidth);
-            }
-        }
+        // Мобильные события
+        slider.addEventListener('touchstart', handleDragStart, { passive: true });
+        slider.addEventListener('touchend', handleDragEnd);
+        slider.addEventListener('touchmove', handleDragMove, { passive: false });
         
-        function smoothScroll(targetTranslate) {
-            const startTranslate = currentTranslate;
-            const startTime = Date.now();
-            const duration = 800;
-            
-            function animate() {
-                const currentTime = Date.now();
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(1, elapsed / duration);
-                const easeProgress = progress < .5 ? 
-                    4 * progress * progress * progress :
-                    1 - Math.pow(-2 * progress + 2, 3) / 2;
-                
-                const newTranslate = startTranslate + (targetTranslate - startTranslate) * easeProgress;
-                setTranslate(newTranslate);
-                
-                if (progress < 1) {
-                    animationID = requestAnimationFrame(animate);
-                    isAnimating = true;
-                } else {
-                    isAnimating = false;
-                    const maxScroll = getMaxScroll();
-                    if (currentTranslate < maxScroll) {
-                        smoothScroll(maxScroll);
-                    } else if (currentTranslate > 0) {
-                        smoothScroll(0);
-                    }
-                }
-            }
-            
-            slider.classList.add('smooth');
-            animate();
-        }
+        // Десктопные события
+        slider.addEventListener('mousedown', handleDragStart);
+        slider.addEventListener('mousemove', handleDragMove);
+        slider.addEventListener('mouseup', handleDragEnd);
+        slider.addEventListener('mouseleave', handleDragEnd);
         
-        function setTranslate(translate) {
-            currentTranslate = translate;
-            prevTranslate = translate;
-            slider.style.transform = `translate3d(${translate}px, 0, 0)`;
-        }
-        
-        function animation() {
-            if (isDragging) {
-                requestAnimationFrame(animation);
-            }
-        }
-        
-        window.oncontextmenu = function(event) {
-            if (event.target.closest('.collection__grid')) {
-                event.preventDefault();
-                event.stopPropagation();
-                return false;
-            }
-        }
-        
-        window.addEventListener('resize', () => {
-            const maxScroll = getMaxScroll();
-            if (currentTranslate < maxScroll) {
-                slider.classList.add('smooth');
-                setTranslate(maxScroll);
-            }
-        });
-        
-        setTranslate(0);
+        // Оптимизация для iOS
+        slider.style.webkitOverflowScrolling = 'touch';
     });
 }
 
@@ -481,64 +325,28 @@ function updateCartButton() {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
 }
 
-// Оптимизация слайдера для мобильных устройств
-function initializeSlider(container) {
+// Улучшение прокрутки на мобильных устройствах
+const collectionsContainer = document.getElementById('collections-container');
+if (collectionsContainer) {
     let isScrolling = false;
     let startX;
     let scrollLeft;
-    let timeoutId;
 
-    container.addEventListener('touchstart', (e) => {
+    collectionsContainer.addEventListener('touchstart', (e) => {
         isScrolling = true;
-        startX = e.touches[0].pageX - container.offsetLeft;
-        scrollLeft = container.scrollLeft;
-        cancelAnimationFrame(timeoutId);
-    }, { passive: true });
+        startX = e.touches[0].pageX - collectionsContainer.offsetLeft;
+        scrollLeft = collectionsContainer.scrollLeft;
+    });
 
-    container.addEventListener('touchmove', (e) => {
+    collectionsContainer.addEventListener('touchmove', (e) => {
         if (!isScrolling) return;
         e.preventDefault();
-        const x = e.touches[0].pageX - container.offsetLeft;
+        const x = e.touches[0].pageX - collectionsContainer.offsetLeft;
         const walk = (x - startX) * 2;
-        container.scrollLeft = scrollLeft - walk;
-    }, { passive: false });
+        collectionsContainer.scrollLeft = scrollLeft - walk;
+    });
 
-    container.addEventListener('touchend', () => {
+    collectionsContainer.addEventListener('touchend', () => {
         isScrolling = false;
-        const cards = container.querySelectorAll('.product-card');
-        if (!cards.length) return;
-
-        const cardWidth = cards[0].offsetWidth;
-        const scrollPosition = container.scrollLeft;
-        const targetIndex = Math.round(scrollPosition / cardWidth);
-        
-        timeoutId = requestAnimationFrame(() => {
-            container.scrollTo({
-                left: targetIndex * cardWidth,
-                behavior: 'smooth'
-            });
-        });
-    });
-}
-
-// Применяем оптимизацию к существующему коду
-const collectionsContainer = document.getElementById('collections-container');
-if (collectionsContainer) {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const slider = entry.target.querySelector('.collection__grid');
-                if (slider) {
-                    initializeSlider(slider);
-                }
-            }
-        });
-    }, {
-        threshold: 0.1
-    });
-
-    // Наблюдаем за коллекциями
-    collectionsContainer.querySelectorAll('.collection').forEach(collection => {
-        observer.observe(collection);
     });
 } 
