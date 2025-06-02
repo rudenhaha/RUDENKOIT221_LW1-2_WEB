@@ -8,6 +8,10 @@ body {
     font-family: 'Manrope', sans-serif;
     color: #333;
     background: #fff;
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    position: static;
+    height: auto;
 }
 
 .container {
@@ -198,6 +202,8 @@ body {
     user-select: none;
     will-change: transform;
     transform: translateZ(0);
+    touch-action: pan-x;
+    padding-bottom: 10px;
 }
 
 .collection__grid::-webkit-scrollbar {
@@ -217,9 +223,8 @@ body {
     overflow: hidden;
     position: relative;
     padding: 0 20px;
-    touch-action: none;
     -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-x;
 }
 
 .product-card {
@@ -576,9 +581,9 @@ body {
     }
 
     .collection__grid {
-        gap: 10px;
-        margin: 0 -5px;
-        scroll-behavior: smooth;
+        touch-action: pan-x;
+        -webkit-overflow-scrolling: touch;
+        padding: 0 20px 10px;
     }
 
     .collection__intro {
@@ -631,6 +636,16 @@ body {
     .main-title {
         font-size: 26px;
         margin-bottom: 40px;
+    }
+
+    .nav__menu.active {
+        right: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    body.menu-open {
+        overflow: hidden;
     }
 }
 

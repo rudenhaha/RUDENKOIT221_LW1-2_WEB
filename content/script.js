@@ -29,6 +29,7 @@ function initializeMobileMenu() {
         menuBtn.addEventListener('click', () => {
             menu.classList.toggle('active');
             menuBtn.classList.toggle('active');
+            document.body.classList.toggle('menu-open');
         });
 
         // Закрываем меню при клике вне его
@@ -36,6 +37,7 @@ function initializeMobileMenu() {
             if (!menu.contains(e.target) && !menuBtn.contains(e.target)) {
                 menu.classList.remove('active');
                 menuBtn.classList.remove('active');
+                document.body.classList.remove('menu-open');
             }
         });
     }
@@ -52,42 +54,60 @@ function initializeCollectionSliders() {
         let velocity = 0;
         let lastScrollLeft = 0;
         let lastTime = 0;
+        let startY;
+        let isScrollingHorizontally = false;
         
         function handleDragStart(e) {
             isDown = true;
             slider.classList.add('dragging');
             startX = e.type === 'mousedown' ? e.pageX : e.touches[0].pageX;
+            startY = e.type === 'mousedown' ? e.pageY : e.touches[0].pageY;
             scrollLeft = slider.scrollLeft;
+            isScrollingHorizontally = false;
             cancelMomentumTracking();
         }
         
         function handleDragMove(e) {
             if (!isDown) return;
-            e.preventDefault();
             
             const x = e.type === 'mousemove' ? e.pageX : e.touches[0].pageX;
-            const walk = (startX - x) * 2;
-            const newScrollLeft = scrollLeft + walk;
+            const y = e.type === 'mousemove' ? e.pageY : e.touches[0].pageY;
             
-            const now = Date.now();
-            const dt = now - lastTime;
-            if (dt > 0) {
-                velocity = (newScrollLeft - lastScrollLeft) / dt;
+            const deltaX = Math.abs(x - startX);
+            const deltaY = Math.abs(y - startY);
+            
+            // Определяем направление прокрутки
+            if (!isScrollingHorizontally && (deltaX > deltaY)) {
+                isScrollingHorizontally = true;
             }
             
-            lastScrollLeft = newScrollLeft;
-            lastTime = now;
-            
-            slider.scrollLeft = newScrollLeft;
+            // Если движение горизонтальное, предотвращаем вертикальную прокрутку
+            if (isScrollingHorizontally) {
+                e.preventDefault();
+                const walk = (startX - x) * 2;
+                const newScrollLeft = scrollLeft + walk;
+                
+                const now = Date.now();
+                const dt = now - lastTime;
+                if (dt > 0) {
+                    velocity = (newScrollLeft - lastScrollLeft) / dt;
+                }
+                
+                lastScrollLeft = newScrollLeft;
+                lastTime = now;
+                
+                slider.scrollLeft = newScrollLeft;
+            }
         }
         
         function handleDragEnd() {
             isDown = false;
             slider.classList.remove('dragging');
             
-            if (Math.abs(velocity) > 0.5) {
+            if (isScrollingHorizontally && Math.abs(velocity) > 0.5) {
                 beginMomentumTracking();
             }
+            isScrollingHorizontally = false;
         }
         
         function cancelMomentumTracking() {
